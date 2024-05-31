@@ -18,7 +18,8 @@ export class ProfileComponent implements OnInit {
   isLoading$ = this.isLoadingSubject.asObservable();
   readonly DataState = DataState;
 
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService) {
+  }
 
   ngOnInit(): void {
     this.profileState$ = this.userService.profile$()
@@ -26,11 +27,11 @@ export class ProfileComponent implements OnInit {
         map(response => {
           console.log(response);
           this.dataSubject.next(response);
-          return { dataState: DataState.LOADED, appData: response };
+          return {dataState: DataState.LOADED, appData: response};
         }),
-        startWith({ dataState: DataState.LOADING }),
+        startWith({dataState: DataState.LOADING}),
         catchError((error: string) => {
-          return of({ dataState: DataState.ERROR, appData: this.dataSubject.value, error })
+          return of({dataState: DataState.ERROR, appData: this.dataSubject.value, error})
         })
       )
   }
@@ -38,6 +39,85 @@ export class ProfileComponent implements OnInit {
   updateProfile(profileForm: NgForm): void {
     this.isLoadingSubject.next(true);
     this.profileState$ = this.userService.update$(profileForm.value)
+      .pipe(
+        map(response => {
+          console.log(response);
+          this.dataSubject.next({...response, data: response.data});
+          this.isLoadingSubject.next(false);
+          return {dataState: DataState.LOADED, appData: this.dataSubject.value};
+        }),
+        startWith({dataState: DataState.LOADED, appData: this.dataSubject.value}),
+        catchError((error: string) => {
+          this.isLoadingSubject.next(false);
+          return of({dataState: DataState.LOADED, appData: this.dataSubject.value, error})
+        })
+      )
+  }
+
+  updatePassword(passwordForm: NgForm): void {
+    this.isLoadingSubject.next(true);
+    if (passwordForm.value.newPassword === passwordForm.value.confirmNewPassword) {
+      this.profileState$ = this.userService.updatePassword$(passwordForm.value)
+        .pipe(
+          map(response => {
+            console.log(response);
+            passwordForm.reset();
+            this.isLoadingSubject.next(false);
+            return {dataState: DataState.LOADED, appData: this.dataSubject.value};
+          }),
+          startWith({dataState: DataState.LOADED, appData: this.dataSubject.value}),
+          catchError((error: string) => {
+            passwordForm.reset();
+            this.isLoadingSubject.next(false);
+            return of({dataState: DataState.LOADED, appData: this.dataSubject.value, error})
+          })
+        )
+    } else {
+      passwordForm.reset();
+      console.log("Passwords don't match.")
+      this.isLoadingSubject.next(false);
+    }
+  }
+
+  updateRole(roleForm: NgForm): void {
+    this.isLoadingSubject.next(true);
+    this.profileState$ = this.userService.updateRoles$(roleForm.value.roleName)
+      .pipe(
+        map(response => {
+          console.log(response);
+          this.dataSubject.next({...response, data: response.data});
+          this.isLoadingSubject.next(false);
+          return {dataState: DataState.LOADED, appData: this.dataSubject.value};
+        }),
+        startWith({dataState: DataState.LOADED, appData: this.dataSubject.value}),
+        catchError((error: string) => {
+          this.isLoadingSubject.next(false);
+          return of({dataState: DataState.LOADED, appData: this.dataSubject.value, error})
+        })
+      )
+  }
+
+  updateAccountSettings(settingsForm: NgForm): void {
+    this.isLoadingSubject.next(true);
+    this.profileState$ = this.userService.updateAccountSettings$(settingsForm.value)
+      .pipe(
+        map(response => {
+          console.log(response);
+          this.dataSubject.next({ ...response, data: response.data });
+          this.isLoadingSubject.next(false);
+          return { dataState: DataState.LOADED, appData: this.dataSubject.value };
+        }),
+        startWith({ dataState: DataState.LOADED, appData: this.dataSubject.value }),
+        catchError((error: string) => {
+          this.isLoadingSubject.next(false);
+          return of({ dataState: DataState.LOADED, appData: this.dataSubject.value, error })
+        })
+      )
+  }
+
+  toggleMfa(): void {
+    this.isLoadingSubject.next(true);
+    this.profileState$ = this.userService.toggleMfa$()
       .pipe(
         map(response => {
           console.log(response);
